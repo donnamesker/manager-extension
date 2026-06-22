@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>My Manager Extension</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        button {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        pre {
+            background: #eee;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>My First Manager.io Extension</h1>
+    <p>Click the button below to fetch data via Manager's API.</p>
+
+    <button id="fetchBtn">Fetch Accounts</button>
+
+    <h3>API Response:</h3>
+    <pre id="output">Click the button to see data...</pre>
+
+    <script>
+        // 1. Core Helper Function provided by Manager.io docs
+        async function postMessageWithResponse(message) {
+            return new Promise((resolve) => {
+                const requestId = crypto.randomUUID();
+
+                function onMessage(event) {
+                    if (event.data?.type?.endsWith('-response') && event.data?.requestId === requestId) {
+                        window.removeEventListener('message', onMessage);
+                        resolve(event.data.body);
+                    }
+                }
+
+                window.addEventListener('message', onMessage);
+                window.parent.postMessage({ ...message, requestId }, '*');
+            });
+        }
+
+        // 2. Custom API call targeting a specific api4 endpoint
+        async function getBankOrCashAccounts() {
+            return await postMessageWithResponse({
+                type: 'api-request',
+                method: 'GET',
+                path: '/api4/bank-or-cash-accounts' // Manager automatically scopes this to the active business
+            });
+        }
+
+        // 3. UI Logic to wire up the button click
+        document.getElementById('fetchBtn').addEventListener('click', async () => {
+            const outputElement = document.getElementById('output');
+            outputElement.textContent = "Loading...";
+
+            try {
+                const data = await getBankOrCashAccounts();
+                outputElement.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                outputElement.textContent = "Error fetching data: " + error.message;
+            }
+        });
+    </script>
+</body>
+
+</html>
