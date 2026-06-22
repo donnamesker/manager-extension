@@ -280,31 +280,49 @@
             }
         }
 
-        // Optimized API batch pagination collector with API4 fallback routing
+        // Optimized batch collector that handles both API4 and API2 structures perfectly
         async function fetchAPI4Batch(endpoint) {
             let results = [];
             let skip = 0;
             let loop = true;
+            let isApi2Fallback = false;
 
             while (loop) {
-                // Try api4 first, fallback to standard api if it returns a 404
-                let url = `${API_BASE}/api4/${endpoint}?Skip=${skip}&PageSize=1000`;
-                let res = await fetch(url);
+                let url = "";
 
-                if (res.status === 404) {
-                    // Fallback route context
-                    url = `${API_BASE}/${endpoint}?Skip=${skip}&PageSize=1000`;
-                    res = await fetch(url);
+                if (!isApi2Fallback) {
+                    // Try high-speed API4 structure first
+                    url = `${API_BASE}/api4/${endpoint}?Skip=${skip}&PageSize=1000`;
+                } else {
+                    // Fall back to working API2 structure with lowercase parameters
+                    url = `${API_BASE}/api2/${endpoint}?skip=${skip}`;
                 }
 
-                if (!res.ok) throw new Error(`HTTP Matrix error accessing endpoints: ${res.status}`);
+                let res = await fetch(url);
+
+                // If API4 throws a 404, flip the fallback switch and try the loop again
+                if (res.status === 404 && !isApi2Fallback) {
+                    console.log(`[Framework Context] /api4/ not found for ${endpoint}. Falling back to /api2/`);
+                    isApi2Fallback = true;
+                    continue;
+                }
+
+                if (!res.ok) throw new Error(`HTTP Error accessing endpoints (${res.status})`);
 
                 const data = await res.json();
                 const items = data[endpoint] || [];
                 results = results.concat(items);
 
-                if (items.length < 1000) loop = false;
-                else skip += 1000;
+                // API2 serves data in groups of 50; API4 serves up to 1000
+                const pageSize = isApi2Fallback ? (data.pageSize || 50) : 1000;
+                const totalRecords = data.totalRecords || 0;
+
+                skip += pageSize;
+
+                // Stop looping if we run out of items or cross the master record count
+                if (items.length < pageSize || (totalRecords > 0 && skip >= totalRecords)) {
+                    loop = false;
+                }
             }
             return results;
         }
