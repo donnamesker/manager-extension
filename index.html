@@ -280,17 +280,29 @@
             }
         }
 
-        // Optimized API4 bulk pagination collector 
+        // Optimized API batch pagination collector with API4 fallback routing
         async function fetchAPI4Batch(endpoint) {
             let results = [];
             let skip = 0;
             let loop = true;
+
             while (loop) {
-                const res = await fetch(`${API_BASE}/api4/${endpoint}?Skip=${skip}&PageSize=1000`);
-                if (!res.ok) throw new Error(`HTTP Matrix error accessing api4: ${res.status}`);
+                // Try api4 first, fallback to standard api if it returns a 404
+                let url = `${API_BASE}/api4/${endpoint}?Skip=${skip}&PageSize=1000`;
+                let res = await fetch(url);
+
+                if (res.status === 404) {
+                    // Fallback route context
+                    url = `${API_BASE}/${endpoint}?Skip=${skip}&PageSize=1000`;
+                    res = await fetch(url);
+                }
+
+                if (!res.ok) throw new Error(`HTTP Matrix error accessing endpoints: ${res.status}`);
+
                 const data = await res.json();
                 const items = data[endpoint] || [];
                 results = results.concat(items);
+
                 if (items.length < 1000) loop = false;
                 else skip += 1000;
             }
