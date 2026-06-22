@@ -1,88 +1,480 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <title>My Manager Extension</title>
+    <title>1099 Multi-Tenant Compliance Manager (API4 Native)</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            padding: 20px;
-            background-color: #f9f9f9;
-            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 20px;
+            background: #f9fafb;
+            color: #1f2937;
         }
 
-        button {
-            background-color: #007aff;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+            padding: 20px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #4b5563;
+            text-transform: uppercase;
+        }
+
+        select,
+        input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            background: white;
+            font-size: 14px;
+        }
+
+        .btn {
+            background: #2563eb;
             color: white;
             border: none;
-            padding: 10px 15px;
-            font-size: 14px;
-            border-radius: 6px;
+            padding: 9px 14px;
+            border-radius: 4px;
             cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
         }
 
-        button:hover {
-            background-color: #0056b3;
+        .btn:hover {
+            background: #1d4ed8;
         }
 
-        pre {
-            background: #eee;
-            padding: 15px;
-            border-radius: 6px;
-            overflow-x: auto;
+        .btn:disabled {
+            background: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        .section-title {
+            background-color: #f3f4f6;
+            padding: 10px 15px;
+            border-bottom: 1px solid #c4c6c8;
+            border-left: 4px solid #4b5563;
+            margin-top: 35px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .nec-header {
+            border-left-color: #10b981;
+        }
+
+        .misc-header {
+            border-left-color: #06b6d4;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+        }
+
+        .warning {
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+            color: #4b5563;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .tab-navigation {
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        .tab-btn.active {
+            border-bottom: 2px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
         }
     </style>
 </head>
 
 <body>
 
-    <h1>My First Manager.io Extension</h1>
-    <p>Click the button below to fetch data via Manager's API.</p>
+    <div class="container">
+        <h1>1099 Native Ledger Engine</h1>
 
-    <button id="fetchBtn">Fetch Accounts</button>
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchView('report')">📋 Tax Ledger Audit Report</button>
+            <button class="tab-btn" onclick="switchView('mapping')">⚙️ Chart of Accounts Mapping</button>
+        </div>
 
-    <h3>API Response:</h3>
-    <pre id="output">Click the button to see data...</pre>
+        <div id="view-report">
+            <div class="control-panel">
+                <div class="field-group">
+                    <label>Start Window</label>
+                    <input type="date" id="start-date" value="2026-01-01">
+                </div>
+                <div class="field-group">
+                    <label>End Window</label>
+                    <input type="date" id="end-date" value="2026-12-31">
+                </div>
+                <button class="btn" id="scan-btn" onclick="run1099AuditEngine()">Run Audit Scan</button>
+            </div>
+
+            <div class="status-container">
+                <div id="loading-spinner" class="spinner"></div>
+                <div id="status-message">Configure tax window boundaries and run scan tracking...</div>
+            </div>
+
+            <div id="report-output-wrapper" class="hidden">
+                <div class="section-title nec-header">Form 1099-NEC: Nonemployee Compensation</div>
+                <table id="nec-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Tax ID (TIN)</th>
+                            <th>Federal Tax Classification</th>
+                            <th>Form & Box Designation</th>
+                            <th style="text-align: right;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <div class="section-title misc-header">Form 1099-MISC</div>
+                <table id="misc-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Tax ID (TIN)</th>
+                            <th>Federal Tax Classification</th>
+                            <th>Form & Box Designation</th>
+                            <th style="text-align: right;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-mapping" class="hidden">
+            <p>Map your internal expense accounts and control rules directly to IRS tax allocations.</p>
+            <table id="account-table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Account Name</th>
+                        <th>IRS 1099 Box Destination Allocation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="3">Awaiting data aggregation scan initialization...</td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn" style="float: right; margin-top: 20px;" onclick="saveAccountMappings()">Save Allocation
+                Configurations Map</button>
+        </div>
+    </div>
 
     <script>
-        // 1. Core Helper Function provided by Manager.io docs
-        async function postMessageWithResponse(message) {
-            return new Promise((resolve) => {
-                const requestId = crypto.randomUUID();
+        // Native framework resolution: Binds relative URL contexts when mounted inside the application IFRAME
+        const API_BASE = window.location.origin;
 
-                function onMessage(event) {
-                    if (event.data?.type?.endsWith('-response') && event.data?.requestId === requestId) {
-                        window.removeEventListener('message', onMessage);
-                        resolve(event.data.body);
-                    }
-                }
+        const TAX_CATEGORIES = {
+            EXCLUDE: "Non-Expense Account (Ignore)",
+            SKIP_PAYMENT_SOURCE: "Skip Transactions (Credit Card / 1099-K)",
+            NEC_01: "1099-NEC, Box 1: Nonemployee Compensation",
+            MISC_01: "1099-MISC, Box 1: Rents",
+            MISC_03: "1099-MISC, Box 3: Other Income",
+            MISC_06: "1099-MISC, Box 6: Medical/Health Care Payments"
+        };
 
-                window.addEventListener('message', onMessage);
-                window.parent.postMessage({ ...message, requestId }, '*');
+        let cachedAccounts = [];
+        let accountMap = {};
+
+        function switchView(viewName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (viewName === 'report') {
+                document.getElementById('view-report').classList.remove('hidden');
+                document.getElementById('view-mapping').classList.add('hidden');
+            } else {
+                document.getElementById('view-report').classList.add('hidden');
+                document.getElementById('view-mapping').classList.remove('hidden');
+                renderMappingTable();
+            }
+        }
+
+        // Optimized API4 bulk pagination collector 
+        async function fetchAPI4Batch(endpoint) {
+            let results = [];
+            let skip = 0;
+            let loop = true;
+            while (loop) {
+                const res = await fetch(`${API_BASE}/api4/${endpoint}?Skip=${skip}&PageSize=1000`);
+                if (!res.ok) throw new Error(`HTTP Matrix error accessing api4: ${res.status}`);
+                const data = await res.json();
+                const items = data[endpoint] || [];
+                results = results.concat(items);
+                if (items.length < 1000) loop = false;
+                else skip += 1000;
+            }
+            return results;
+        }
+
+        function extractTaxId(customFields) {
+            const strings = customFields?.Strings || customFields?.strings || {};
+            for (const val of Object.values(strings)) {
+                if (!val) continue;
+                const digits = val.toString().replace(/[^0-9]/g, "");
+                if (digits.length === 9) return val.toString().trim();
+            }
+            return "";
+        }
+
+        function matchCustomField(customFields, matches) {
+            const strings = customFields?.Strings || customFields?.strings || {};
+            for (const val of Object.values(strings)) {
+                if (!val) continue;
+                const lower = val.toString().toLowerCase();
+                if (matches.some(m => lower.includes(m.toLowerCase()))) return val.toString().trim();
+            }
+            return "";
+        }
+
+        async function loadInitialData() {
+            try {
+                // Initialize Account configurations from local storage cache
+                const saved = localStorage.getItem("manager_1099_allocations");
+                if (saved) accountMap = JSON.parse(saved);
+
+                cachedAccounts = await fetchAPI4Batch("chart-of-accounts");
+            } catch (e) {
+                document.getElementById("status-message").innerText = "Data framework synchronization failed: " + e.message;
+            }
+        }
+
+        function renderMappingTable() {
+            const tbody = document.querySelector("#account-table tbody");
+            tbody.innerHTML = "";
+            cachedAccounts.forEach(acc => {
+                let options = "";
+                Object.keys(TAX_CATEGORIES).forEach(k => {
+                    const selected = (accountMap[acc.key] === k) ? "selected" : "";
+                    options += `<option value="${k}" ${selected}>${TAX_CATEGORIES[k]}</option>`;
+                });
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><code>${acc.code || "N/A"}</code></td>
+                    <td class="acc-row" data-key="${acc.key}">${acc.name}</td>
+                    <td><select class="map-select" style="width:100%;">${options}</select></td>
+                `;
+                tbody.appendChild(tr);
             });
         }
 
-        // 2. Custom API call targeting a specific api4 endpoint
-        async function getBankOrCashAccounts() {
-            return await postMessageWithResponse({
-                type: 'api-request',
-                method: 'GET',
-                path: '/api4/bank-or-cash-account-batch'
+        function saveAccountMappings() {
+            const rows = document.querySelectorAll("#account-table tbody tr");
+            rows.forEach(r => {
+                const nameEl = r.querySelector(".acc-row");
+                const selectEl = r.querySelector(".map-select");
+                if (nameEl && selectEl) accountMap[nameEl.getAttribute("data-key")] = selectEl.value;
             });
+            localStorage.setItem("manager_1099_allocations", JSON.stringify(accountMap));
+            alert("Allocation preferences mapped locally within runtime context!");
         }
 
-        // 3. UI Logic to wire up the button click
-        document.getElementById('fetchBtn').addEventListener('click', async () => {
-            const outputElement = document.getElementById('output');
-            outputElement.textContent = "Loading...";
+        async function run1099AuditEngine() {
+            const start = document.getElementById("start-date").value;
+            const end = document.getElementById("end-date").value;
+            const msg = document.getElementById("status-message");
+            const spinner = document.getElementById("loading-spinner");
+            const output = document.getElementById("report-output-wrapper");
+
+            msg.innerText = "Scanning general ledger indices synchronously...";
+            spinner.style.display = "block";
+            output.classList.add("hidden");
 
             try {
-                const data = await getBankOrCashAccounts();
-                outputElement.textContent = JSON.stringify(data, null, 2);
-            } catch (error) {
-                outputElement.textContent = "Error fetching data: NEW " + error.message;
+                // 1. Bulk Fetch Complete Objects natively
+                const suppliers = await fetchAPI4Batch("suppliers");
+                const transactions = await fetchAPI4Batch("general-ledger-transactions");
+
+                // 2. Index Supplier Metadata Profiles
+                const registry = {};
+                const exemptClasses = ["corporation", "c-corp", "s-corp", "non-profit", "government"];
+                const lawKeywords = ["attorney", "legal", "law firm", "counsel"];
+
+                suppliers.forEach(s => {
+                    const cf = s.CustomFields2 || s.customFields2;
+                    const taxId = extractTaxId(cf);
+                    let status = matchCustomField(cf, ["Individual", "Proprietor", "LLC", "Corporation", "Partnership"]);
+                    if (!status) status = "Individual / Sole Proprietor";
+
+                    let eligible = !exemptClasses.some(ex => status.toLowerCase().includes(ex));
+                    if (lawKeywords.some(k => s.name.toLowerCase().includes(k) || status.toLowerCase().includes(k))) {
+                        eligible = true;
+                    }
+
+                    registry[s.key] = { name: s.name, taxId: taxId || "❌ Missing Tax ID", taxStatus: status, eligible };
+                });
+
+                // Find Dynamic Accounts Payable Control Identifier
+                const apAcc = cachedAccounts.find(a => a.name === "Accounts Payable");
+                const apKey = apAcc ? apAcc.key : null;
+
+                const globalTotals = {};
+
+                // 3. Complete Singe-Pass Scan of the General Ledger Architecture 
+                transactions.forEach(tx => {
+                    const date = tx.date || tx.Date;
+                    if (!date || date < start || date > end) return;
+
+                    const supplierKey = tx.Supplier || tx.supplier || tx.SupplierKey;
+                    if (!supplierKey || !registry[supplierKey]) return;
+
+                    const meta = registry[supplierKey];
+                    if (!meta.eligible) return;
+
+                    const targetAccount = tx.Account || tx.account;
+                    let box = accountMap[targetAccount];
+
+                    // Forced override control logic for dynamic entry adjustments
+                    if (targetAccount === apKey) box = "NEC_01";
+
+                    if (!box || ["EXCLUDE", "SKIP_PAYMENT_SOURCE"].includes(box)) return;
+
+                    // Compute dynamic scalar absolute total values safely
+                    const amount = parseFloat(tx.Amount || tx.amount || 0);
+
+                    if (!globalTotals[supplierKey]) {
+                        globalTotals[supplierKey] = { meta, balances: {} };
+                    }
+                    globalTotals[supplierKey].boxes[box] = (globalTotals[supplierKey].boxes[box] || 0) + amount;
+                });
+
+                // 4. Populate UI Tables
+                const necTbody = document.querySelector("#nec-table tbody");
+                const miscTbody = document.querySelector("#misc-table tbody");
+                necTbody.innerHTML = ""; miscTbody.innerHTML = "";
+
+                let necRows = 0, miscRows = 0;
+
+                Object.values(globalTotals).forEach(v => {
+                    Object.keys(v.boxes).forEach(boxId => {
+                        const total = v.boxes[boxId];
+                        if (total < 600.00) return; // Drop entries falling below the legal minimum reporting requirement
+
+                        const tr = document.createElement("tr");
+                        const idClass = v.meta.taxId.includes("❌") ? 'class="warning"' : '';
+                        tr.innerHTML = `
+                            <td>${v.meta.name}</td>
+                            <td ${idClass}><code>${v.meta.taxId}</code></td>
+                            <td>${v.meta.taxStatus}</td>
+                            <td>${TAX_CATEGORIES[boxId]}</td>
+                            <td style="text-align: right;">$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        `;
+
+                        if (boxId.startsWith("NEC")) {
+                            necTbody.appendChild(tr);
+                            necRows++;
+                        } else {
+                            miscTbody.appendChild(tr);
+                            miscRows++;
+                        }
+                    });
+                });
+
+                if (necRows === 0) necTbody.innerHTML = `<tr><td colspan="5" style="color:#6b7280; font-style:italic;">No contractors qualified for this form category.</td></tr>`;
+                if (miscRows === 0) miscTbody.innerHTML = `<tr><td colspan="5" style="color:#6b7280; font-style:italic;">No contractors qualified for this form category.</td></tr>`;
+
+                spinner.style.display = "none";
+                msg.innerText = "Audit scanning transaction arrays complete.";
+                output.classList.remove("hidden");
+
+            } catch (e) {
+                spinner.style.display = "none";
+                msg.innerHTML = `<span style="color:red; font-weight:bold;">Scan Breakdown Aborted: ${e.message}</span>`;
             }
+        }
+
+        window.addEventListener("DOMContentLoaded", async () => {
+            await loadInitialData();
         });
     </script>
 </body>
