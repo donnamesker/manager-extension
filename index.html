@@ -68,7 +68,7 @@
             return await postMessageWithResponse({
                 type: 'api-request',
                 method: 'GET',
-                path: '/api4/bank-or-cash-account' // Manager automatically scopes this to the active business
+                path: '/api4/bank-or-cash-account-batch' // Manager automatically scopes this to the active business
             });
         }
 
@@ -81,7 +81,7 @@
                 const data = await getBankOrCashAccounts();
                 outputElement.textContent = JSON.stringify(data, null, 2);
             } catch (error) {
-                outputElement.textContent = "Error fetching data: " + error.message;
+                outputElement.textContent = "Error fetching data: NEW " + error.message;
             }
         });
     </script>
